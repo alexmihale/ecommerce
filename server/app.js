@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const Routes = require('./routes/index');
 const chalk = require('chalk');
 require('dotenv/config');
 
@@ -9,6 +10,8 @@ const DB = process.env.DB_CONNECTION;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use('/api', Routes);
 
 mongoose
   .connect(DB, {

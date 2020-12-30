@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema(
   {
     salutation: { type: String, default: null },
-    firstName: { type: String, trim: true, default: null },
-    lastName: { type: String, trim: true, default: null },
+    firstName: { type: String, trim: true, required: true },
+    lastName: { type: String, trim: true, required: true },
     alias: { type: String, trim: true, default: null },
     dateOfBirth: {
       type: Date,
@@ -26,25 +26,57 @@ const userSchema = new mongoose.Schema(
     homePhoneNumber: { type: String, default: null },
     isAdmin: {
       type: Boolean,
-      default: null,
+      default: false,
     },
     avatar: { type: String, default: null },
-    address: {
-      name: { type: String, required: true },
-      phoneNumber: { type: String, required: true },
-      district: { type: String, required: true },
-      city: { type: String, required: true },
-      address: { type: String, required: true },
-    },
+    deliveryAddress: [
+      {
+        name: { type: String, default: null },
+        phoneNumber: { type: String, default: null },
+        district: { type: String, default: null },
+        city: { type: String, default: null },
+        address: { type: String, default: null },
+      },
+    ],
+    invoiceAddress: [
+      {
+        name: { type: String, default: null },
+        phoneNumber: { type: String, default: null },
+        district: { type: String, default: null },
+        city: { type: String, default: null },
+        address: { type: String, default: null },
+      },
+    ],
     cart: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Cart' }],
-    favourite: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Favourite' }],
+    favourite: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    ],
     review: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
     order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
-    voucher: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Voucher' }],
-    warranty: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Warranty' }],
+    voucher: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Voucher' },
+    ],
+    warranty: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Warranty' },
+    ],
+    tokens: [
+      {
+        token: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+
+userSchema.methods.getPublicProfile = async function () {
+  const user = this;
+  const userObject = user.toObject();
+  delete userObject.password;
+  delete userObject.tokens;
+};
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;
