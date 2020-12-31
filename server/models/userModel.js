@@ -76,6 +76,8 @@ userSchema.methods.getPublicProfile = async function () {
   const userObject = user.toObject();
   delete userObject.password;
   delete userObject.tokens;
+
+  return userObject;
 };
 
 const User = mongoose.model('User', userSchema);

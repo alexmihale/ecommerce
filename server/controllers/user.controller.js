@@ -10,7 +10,10 @@ const postUser = async (req, res) => {
 
   const newUser = new User({ firstName, lastName, email, password });
   await newUser.save();
-  res.send(newUser);
+
+  const showUser = await newUser.getPublicProfile();
+
+  res.send(showUser);
 };
 
 module.exports = {
