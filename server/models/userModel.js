@@ -31,7 +31,8 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: null },
     deliveryAddress: [
       {
-        name: { type: String, default: null },
+        firstName: { type: String, default: null },
+        lastName: { type: String, default: null },
         phoneNumber: { type: String, default: null },
         district: { type: String, default: null },
         city: { type: String, default: null },
@@ -40,7 +41,8 @@ const userSchema = new mongoose.Schema(
     ],
     invoiceAddress: [
       {
-        name: { type: String, default: null },
+        firstName: { type: String, default: null },
+        lastName: { type: String, default: null },
         phoneNumber: { type: String, default: null },
         district: { type: String, default: null },
         city: { type: String, default: null },
