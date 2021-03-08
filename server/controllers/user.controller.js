@@ -3,6 +3,11 @@ const User = require('../models/userModel');
 const HttpError = require('../utils/HttpError');
 const bcrypt = require('bcrypt');
 
+const getAllUsers = async (req, res) => {
+  const users = await User.find();
+  res.send(users);
+};
+
 const getUsers = async (req, res) => {
   const user = req.user;
   const userShow = await user.getPublicProfile();
@@ -398,6 +403,7 @@ const removeInvoiceAddress = async (req, res) => {
 };
 
 module.exports = {
+  getAllUsers,
   getUsers,
   editPersonalInformations,
   editEmail,
