@@ -2,25 +2,39 @@ const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 const HttpError = require('../utils/HttpError');
 const jwt = require('jsonwebtoken');
-const validator = require('validator');
+const { default: validator } = require('validator');
 require('dotenv/config');
 
 const login = async (req, res) => {
   const { email, password, rememberMe } = req.body;
 
-  const jwtTimeout = rememberMe ? '24 hours' : '7 days';
+  if (!validator.isEmail(email)) {
+    res.status(400).send({ msg: 'Incorrect email format' });
+    throw new HttpError('Incorrect email format', 400);
+  }
+
+  if (!validator.isStrongPassword(password, [{ minSymbols: 1 }])) {
+    res.status(400).send({ msg: 'Password is weak' });
+    throw new HttpError('Password is weak');
+  }
+
+  const jwtTimeout = rememberMe ? '7 days' : '24 hours';
 
   const user = await User.findOne({ email: email });
   if (!user) {
-    res.status(400).send({ msg: 'User or password are incorrect' });
-    throw new HttpError('User or password are incorrect', 400);
+    res.status(400).send({
+      msg: 'Incorrect email email or password',
+    });
+    throw new HttpError('Incorrect email email or password', 400);
   }
 
   const isMatch = bcrypt.compareSync(password, user.password);
 
   if (!isMatch) {
-    res.status(400).send({ msg: 'User or password are incorrect' });
-    throw new HttpError('User or password are incorrect', 400);
+    res
+      .status(400)
+      .send({ msg: 'Incorrect email email or password' });
+    throw new HttpError('Incorrect email email or password', 400);
   }
 
   const token = jwt.sign(
@@ -38,17 +52,31 @@ const login = async (req, res) => {
 
 const register = async (req, res) => {
   const { firstName, lastName, email, password } = req.body;
-  const user = await User.findOne({ email: email });
+  email.trim();
+  email.toLowerCase();
 
-  if (user) {
-    res.status(400).send({ msg: 'User already exists' });
-    throw new HttpError('User already exists', 400);
+  if (validator.isEmpty(firstName) || validator.isEmpty(lastName)) {
+    res.status(400).send({ msg: 'Enter a valid name' });
+    throw new HttpError('Enter a valid name', 400);
   }
 
   if (!validator.isEmail(email)) {
-    res.status(400).send({ msg: 'Incorrect email' });
-    throw new HttpError('Incorrect email', 400);
+    res.status(400).send({ msg: 'Incorrect email format' });
+    throw new HttpError('Incorrect email format', 400);
   }
+
+  if (!validator.isStrongPassword(password, [{ minSymbols: 1 }])) {
+    res.status(400).send({ msg: 'Password is weak' });
+    throw new HttpError('Password is weak');
+  }
+
+  const user = await User.findOne({ email: email });
+
+  if (user) {
+    res.status(400).send({ msg: 'Email already exists' });
+    throw new HttpError('Email already exists', 400);
+  }
+
   const hashPassword = bcrypt.hashSync(password, 8);
 
   const newUser = new User({

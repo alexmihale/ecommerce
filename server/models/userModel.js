@@ -25,10 +25,11 @@ const userSchema = new mongoose.Schema(
     mobilePhoneNumber: { type: String, default: null },
     homePhoneNumber: { type: String, default: null },
     isAdmin: {
-      type: Boolean,
-      default: false,
+      // TODO: isAdmin middleware and functionality to create or verify if user is support, content managare and admin
+      type: String,
+      default: 'user',
     },
-    avatar: { type: String, default: null },
+    avatar: { type: String, default: null }, //TODO: avatar update functionality
     deliveryAddress: [
       {
         firstName: { type: String, default: null },
@@ -49,16 +50,19 @@ const userSchema = new mongoose.Schema(
         address: { type: String, default: null },
       },
     ],
-    cart: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Cart' }],
+    cart: { type: mongoose.Schema.Types.ObjectId, ref: 'Cart' }, //TODO: create functionality to add items to cart and add it to user model
     favourite: [
+      //TODO: create favourite products functionality and add it to user model
       { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     ],
-    review: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
-    order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
+    review: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }], //TODO: create review products functionality and add it to user model
+    order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }], //TODO: create orders functionality and add it to user model
     voucher: [
+      //TODO: create vouchers functionality and add it to user model
       { type: mongoose.Schema.Types.ObjectId, ref: 'Voucher' },
     ],
     warranty: [
+      //TODO: create warranty functionality and add it to user model
       { type: mongoose.Schema.Types.ObjectId, ref: 'Warranty' },
     ],
     tokens: [
