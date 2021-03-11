@@ -21,7 +21,9 @@ mongoose
     useCreateIndex: true,
   })
   .then(() => {
-    console.log(chalk.green.bold('Successfully connected to MongoDB'));
+    console.log(
+      chalk.green.bold('Successfully connected to MongoDB'),
+    );
   })
   .catch((e) => {
     console.log(chalk.red.bold(e));
