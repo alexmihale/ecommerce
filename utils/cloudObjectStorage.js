@@ -86,7 +86,7 @@ function uploadFile(fileName, filePath, fileType) {
 function deleteItem(itemName) {
   return cos
     .deleteObject({
-      Bucket: IBM_OBJECT_STORAGE_BUCKET_NAME,
+      Bucket: process.env.IBM_OBJECT_STORAGE_BUCKET_NAME,
       Key: itemName,
     })
     .promise()
@@ -101,7 +101,7 @@ function deleteItem(itemName) {
 function deleteMultipleItems(deleteRequest) {
   return cos
     .deleteObjects({
-      Bucket: IBM_OBJECT_STORAGE_BUCKET_NAME,
+      Bucket: process.env.IBM_OBJECT_STORAGE_BUCKET_NAME,
       Delete: deleteRequest,
     })
     .promise()

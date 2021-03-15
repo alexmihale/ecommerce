@@ -1,24 +1,15 @@
-const { listenerCount } = require('../models/productModel');
 const Product = require('../models/productModel');
+const Category = require('../models/categoryModel');
 const HttpError = require('../utils/HttpError');
-const fs = require('fs');
+const deleteDataFromTmp = require('../utils/deleteDataFromTmp');
 const cloudObjectStorage = require('../utils/cloudObjectStorage');
-
-const deleteDataFromTmp = (image) => {
-  image.map(async (element) => {
-    await fs.unlink(element.path, (e) => {
-      if (e) {
-        res.status(500).send(e);
-      }
-    });
-  });
-};
 
 const createProduct = async (req, res) => {
   let {
     title,
     description,
     sku,
+    category,
     manufacturerDetails,
     shippingDetails,
     price,
@@ -30,10 +21,11 @@ const createProduct = async (req, res) => {
     variant,
   } = req.body;
 
-  const image = req.files;
+  const user = req.user;
+  const image = req.files['image'];
 
   if (!title || title.length < 10) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res
       .status(400)
       .send({ msg: 'Title must have at least 10 characters' });
@@ -44,7 +36,7 @@ const createProduct = async (req, res) => {
   }
 
   if (title.length > 256) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res
       .status(400)
       .send({ msg: 'Title must have a maximum of 256 characters' });
@@ -55,7 +47,7 @@ const createProduct = async (req, res) => {
   }
 
   if (!description || description.length < 50) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res
       .status(400)
       .send({ msg: 'Description must have at least 50 characters' });
@@ -66,7 +58,7 @@ const createProduct = async (req, res) => {
   }
 
   if (description.length > 5000) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res.status(400).send({
       msg: 'Description must not have more than 5000 characters',
     });
@@ -77,7 +69,7 @@ const createProduct = async (req, res) => {
   }
 
   if (!image || image.length < 1) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res
       .status(400)
       .send({ msg: 'There should be at least one image' });
@@ -85,7 +77,7 @@ const createProduct = async (req, res) => {
   }
 
   if (image.length > 10) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res
       .status(400)
       .send({ msg: 'There should not be more than 10 images' });
@@ -96,7 +88,7 @@ const createProduct = async (req, res) => {
   }
 
   if (!sku) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res.status(400).send({ msg: 'Product sku must be valid' });
     throw new HttpError('Product sku must be valid', 400);
   }
@@ -104,29 +96,24 @@ const createProduct = async (req, res) => {
   if (sku) {
     const newProduct = await Product.findOne({ sku: sku });
     if (newProduct) {
-      deleteDataFromTmp(image.image);
+      deleteDataFromTmp(image);
       res.status(400).send({ msg: 'Product sku already exists' });
       throw new HttpError('Product sku already exists', 400);
     }
   }
 
   if (!price) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res.status(400).send({ msg: 'Product price must not be empty' });
     throw new HttpError('Product price must not be empty', 400);
   }
   if (typeof price !== 'number') {
     if (isNaN(price)) {
-      deleteDataFromTmp(image.image);
+      deleteDataFromTmp(image);
       res.status(400).send({ msg: 'Product price must be a number' });
       throw new HttpError('Product price must be a number', 400);
     }
     price = parseFloat(price);
-  }
-  if (!(typeof price === 'number')) {
-    deleteDataFromTmp(image.image);
-    res.status(400).send({ msg: 'Product price must be a number' });
-    throw new HttpError('Product price must be a number', 400);
   }
 
   if (
@@ -134,7 +121,7 @@ const createProduct = async (req, res) => {
     !manufacturerDetails.modelNumber ||
     !manufacturerDetails.releaseDate
   ) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res
       .status(400)
       .send({ msg: 'Manufacturer details must be valid' });
@@ -148,7 +135,7 @@ const createProduct = async (req, res) => {
     !shippingDetails.height ||
     !shippingDetails.depth
   ) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res.status(400).send({ msg: 'Shipping details must be valid' });
     throw new HttpError('Shipping details must be valid', 400);
   }
@@ -165,7 +152,7 @@ const createProduct = async (req, res) => {
       isNaN(shippingDetails.height) ||
       isNaN(shippingDetails.depth)
     ) {
-      deleteDataFromTmp(image.image);
+      deleteDataFromTmp(image);
       res
         .status(400)
         .send({ msg: 'Shipping details must be a number' });
@@ -179,22 +166,22 @@ const createProduct = async (req, res) => {
 
   if (typeof stock !== 'number') {
     if (isNaN(stock)) {
-      deleteDataFromTmp(image.image);
+      deleteDataFromTmp(image);
       res.status(400).send({ msg: 'Stock must be a number' });
       throw new HttpError('Stock must be a number', 400);
     }
     stock = parseFloat(stock);
   }
   if (!stock || stock < 1) {
-    deleteDataFromTmp(image.image);
+    deleteDataFromTmp(image);
     res
       .status(400)
       .send({ msg: 'Stock must be valid and be at least 1' });
     throw new HttpError('Stock must be valid and be at least 1', 400);
   }
 
-  if (!specs) {
-    deleteDataFromTmp(image.image);
+  if (!specs || typeof specs !== 'object') {
+    deleteDataFromTmp(image);
     res.status(400).send({
       msg: 'Product specification must be valid and not empty',
     });
@@ -207,27 +194,43 @@ const createProduct = async (req, res) => {
   const product = new Product({
     title,
     description,
-    image,
     sku,
     manufacturerDetails,
     shippingDetails,
     price,
     stock,
     specs,
+    createdBy: user._id,
   });
+
+  const categoryFound = await Category.findOne({ _id: category.id });
+
+  if (!categoryFound || categoryFound.length < 1) {
+    const newCategory = new Category({
+      title: category.title,
+      parent: category.parent,
+      product: product._id,
+    });
+    await newCategory.save();
+    Object.assign(product, { category: newCategory._id });
+  } else {
+    categoryFound.product = [...categoryFound.product, product._id];
+
+    await categoryFound.save();
+    Object.assign(product, { category: categoryFound._id });
+  }
 
   if (image) {
     const allImages = [];
 
-    image.image.map(async (element) => {
-      await cloudObjectStorage.uploadFile(
+    image.map((element) => {
+      cloudObjectStorage.uploadFile(
         element.filename,
         element.path,
         element.mimetype,
       );
       allImages.push(element.filename);
     });
-
     Object.assign(product, { image: allImages });
   }
 
@@ -241,7 +244,7 @@ const createProduct = async (req, res) => {
     }
 
     if ((isOnSale && !newPrice) || (isOnSale && !discount)) {
-      deleteDataFromTmp(image.image);
+      deleteDataFromTmp(image);
       res.status(400).send({
         msg: 'New price or discount must be valid and not empty',
       });
@@ -256,37 +259,328 @@ const createProduct = async (req, res) => {
     Object.assign(product, { newPrice });
 
     Object.assign(product, { discount });
-  } else {
-    deleteDataFromTmp(image.image);
-    res
-      .status(400)
-      .send({ msg: 'Product on sale field must be true' });
-    throw new HttpError('Product on sale field must be true', 400);
   }
 
   if (variant) {
-    variant.forEach(async (element) => {
-      const productVariant = await Product.findOne({ _id: element });
+    if (Array.isArray(variant)) {
+      variant.forEach(async (element) => {
+        const productVariant = await Product.findOne({
+          _id: element,
+        });
+        if (!productVariant) {
+          deleteDataFromTmp(image);
+          res.status(400).send({ msg: 'Product variant not found' });
+          throw new HttpError('Product variant not found', 400);
+        }
+      });
+    } else {
+      const productVariant = await Product.findOne({ _id: variant });
       if (!productVariant) {
-        deleteDataFromTmp(image.image);
+        deleteDataFromTmp(image);
         res.status(400).send({ msg: 'Product variant not found' });
         throw new HttpError('Product variant not found', 400);
       }
-    });
+    }
 
     Object.assign(product, { variant });
   }
   try {
     await product.save();
+    user.productsCreated.push(product._id);
+    await user.save();
+    deleteDataFromTmp(image);
 
-    deleteDataFromTmp(image.image);
-
-    res.send(product);
+    res.status(201).send(product);
   } catch (e) {
     res.status(500).send(e);
   }
 };
 
+const editProduct = async (req, res) => {
+  let {
+    title,
+    description,
+    sku,
+    manufacturerDetails,
+    shippingDetails,
+    price,
+    isOnSale,
+    newPrice,
+    discount,
+    isInStock,
+    stock,
+    specs,
+    variant,
+  } = req.body;
+  const image = req.files['image'];
+  const id = req.params.id;
+
+  const product = await Product.findOne({ _id: id });
+
+  if (!title || title.length < 10) {
+    deleteDataFromTmp(image);
+    res
+      .status(400)
+      .send({ msg: 'Title must have at least 10 characters' });
+    throw new HttpError(
+      'Title must have at least 10 characters',
+      400,
+    );
+  }
+
+  if (title.length > 256) {
+    deleteDataFromTmp(image);
+    res
+      .status(400)
+      .send({ msg: 'Title must have a maximum of 256 characters' });
+    throw new HttpError(
+      'Title must have a maximum of 256 characters',
+      400,
+    );
+  }
+
+  if (!description || description.length < 50) {
+    deleteDataFromTmp(image);
+    res
+      .status(400)
+      .send({ msg: 'Description must have at least 50 characters' });
+    throw new HttpError(
+      'Description must have at least 50 characters',
+      400,
+    );
+  }
+
+  if (description.length > 5000) {
+    deleteDataFromTmp(image);
+    res.status(400).send({
+      msg: 'Description must not have more than 5000 characters',
+    });
+    throw new HttpError(
+      'Description must not have more than 5000 characters',
+      400,
+    );
+  }
+
+  if (!image || image.length < 1) {
+    deleteDataFromTmp(image);
+    res
+      .status(400)
+      .send({ msg: 'There should be at least one image' });
+    throw new HttpError('There should be at least one image', 400);
+  }
+
+  if (image.length > 10) {
+    deleteDataFromTmp(image);
+    res
+      .status(400)
+      .send({ msg: 'There should not be more than 10 images' });
+    throw new HttpError(
+      'There should not be more than 10 images',
+      400,
+    );
+  }
+
+  if (!sku) {
+    deleteDataFromTmp(image);
+    res.status(400).send({ msg: 'Product sku must be valid' });
+    throw new HttpError('Product sku must be valid', 400);
+  }
+
+  if (sku) {
+    const newProduct = await Product.findOne({ sku: sku });
+    if (newProduct && !newProduct._id.equals(product._id)) {
+      deleteDataFromTmp(image);
+      res.status(400).send({ msg: 'Product sku already exists' });
+      throw new HttpError('Product sku already exists', 400);
+    }
+  }
+
+  if (!price) {
+    deleteDataFromTmp(image);
+    res.status(400).send({ msg: 'Product price must not be empty' });
+    throw new HttpError('Product price must not be empty', 400);
+  }
+
+  if (typeof price !== 'number') {
+    if (isNaN(price)) {
+      deleteDataFromTmp(image);
+      res.status(400).send({ msg: 'Product price must be a number' });
+      throw new HttpError('Product price must be a number', 400);
+    }
+    price = parseFloat(price);
+  }
+
+  if (
+    !manufacturerDetails ||
+    !manufacturerDetails.modelNumber ||
+    !manufacturerDetails.releaseDate
+  ) {
+    deleteDataFromTmp(image);
+    res
+      .status(400)
+      .send({ msg: 'Manufacturer details must be valid' });
+    throw new HttpError('Manufacturer details must be valid', 400);
+  }
+
+  if (
+    !shippingDetails ||
+    !shippingDetails.weight ||
+    !shippingDetails.width ||
+    !shippingDetails.height ||
+    !shippingDetails.depth
+  ) {
+    deleteDataFromTmp(image);
+    res.status(400).send({ msg: 'Shipping details must be valid' });
+    throw new HttpError('Shipping details must be valid', 400);
+  }
+
+  if (
+    typeof shippingDetails.weight !== 'number' ||
+    typeof shippingDetails.width !== 'number' ||
+    typeof shippingDetails.height !== 'number' ||
+    typeof shippingDetails.depth !== 'number'
+  ) {
+    if (
+      isNaN(shippingDetails.weight) ||
+      isNaN(shippingDetails.width) ||
+      isNaN(shippingDetails.height) ||
+      isNaN(shippingDetails.depth)
+    ) {
+      deleteDataFromTmp(image);
+      res
+        .status(400)
+        .send({ msg: 'Shipping details must be a number' });
+      throw new HttpError('Shipping details must be a number', 400);
+    }
+    shippingDetails.weight = parseFloat(shippingDetails.weight);
+    shippingDetails.width = parseFloat(shippingDetails.width);
+    shippingDetails.height = parseFloat(shippingDetails.height);
+    shippingDetails.depth = parseFloat(shippingDetails.depth);
+  }
+
+  if (typeof stock !== 'number') {
+    if (isNaN(stock)) {
+      deleteDataFromTmp(image);
+      res.status(400).send({ msg: 'Stock must be a number' });
+      throw new HttpError('Stock must be a number', 400);
+    }
+    stock = parseInt(stock);
+  }
+  if (stock < 1 || isInStock === 'false') {
+    stock = 0;
+    isInStock = false;
+  }
+  if (stock >= 1 && isInStock === 'true') {
+    isInStock = true;
+  }
+
+  if (!specs || typeof specs !== 'object') {
+    deleteDataFromTmp(image);
+    res.status(400).send({
+      msg: 'Product specification must be valid and not empty',
+    });
+    throw new HttpError(
+      'Product specification must be valid and not empty',
+      400,
+    );
+  }
+
+  if (image) {
+    const allImages = [];
+
+    product.image.map((element) => {
+      cloudObjectStorage.deleteItem(element);
+    });
+
+    image.map((element) => {
+      cloudObjectStorage.uploadFile(
+        element.filename,
+        element.path,
+        element.mimetype,
+      );
+      allImages.push(element.filename);
+    });
+    product.image = allImages;
+  }
+
+  if (isOnSale && isOnSale === 'true') {
+    if (newPrice && !discount) {
+      discount = ((price - newPrice) / price) * 100;
+    }
+
+    if (!newPrice && discount) {
+      newPrice = price - (discount / 100) * price;
+    }
+
+    if ((isOnSale && !newPrice) || (isOnSale && !discount)) {
+      deleteDataFromTmp(image);
+      res.status(400).send({
+        msg: 'New price or discount must be valid and not empty',
+      });
+      throw new HttpError(
+        'New price discount must be valid and not empty',
+        400,
+      );
+    }
+
+    product.isOnSale = true;
+    product.newPrice = newPrice;
+    product.discount = discount;
+  }
+
+  if (isOnSale && isOnSale === 'false') {
+    product.isOnSale = false;
+    product.newPrice = null;
+    product.discount = null;
+  }
+
+  if (variant) {
+    if (Array.isArray(variant)) {
+      variant.forEach(async (element) => {
+        const productVariant = await Product.findOne({
+          _id: element,
+        });
+        if (!productVariant) {
+          deleteDataFromTmp(image);
+          res.status(400).send({ msg: 'Product variant not found' });
+          throw new HttpError('Product variant not found', 400);
+        }
+      });
+    } else {
+      const productVariant = await Product.findOne({ _id: variant });
+      if (!productVariant) {
+        deleteDataFromTmp(image);
+        res.status(400).send({ msg: 'Product variant not found' });
+        throw new HttpError('Product variant not found', 400);
+      }
+    }
+    product.variant = variant;
+  }
+
+  try {
+    product.title = title;
+    product.description = description;
+    product.sku = sku;
+    product.manufacturerDetails = manufacturerDetails;
+    product.shippingDetails = shippingDetails;
+    product.price = price;
+    product.isInStock = isInStock;
+    product.stock = stock;
+    product.specs = specs;
+
+    await product.save();
+
+    deleteDataFromTmp(image);
+    res.status(200).send(product);
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
+
+const deleteProduct = async (req, res) => {};
+
 module.exports = {
   createProduct,
+  editProduct,
+  deleteProduct,
 };

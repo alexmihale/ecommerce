@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const reviewSchema = new mongoose.Schema(
+const reviewSchema = new mongoose.Schema( //TODO: REVIEW FUNCTIONALITY
   {
     title: { type: String, required: true },
     body: { type: String, required: true },
@@ -8,7 +8,7 @@ const reviewSchema = new mongoose.Schema(
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Review = mongoose.model('Review', reviewSchema);

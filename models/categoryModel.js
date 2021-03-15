@@ -2,7 +2,12 @@ const mongoose = require('mongoose');
 
 const categorySchema = new mongoose.Schema({
   title: { type: String, required: true },
-  parent: { type: String, default: null },
+  parent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    default: null,
+  },
+  product: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
 });
 
 const Category = mongoose.model('Category', categorySchema);

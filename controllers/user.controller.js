@@ -2,6 +2,9 @@ const { default: validator } = require('validator');
 const User = require('../models/userModel');
 const HttpError = require('../utils/HttpError');
 const bcrypt = require('bcrypt');
+const fs = require('fs');
+const cloudObjectStorage = require('../utils/cloudObjectStorage');
+const deleteDataFromTmp = require('../utils/deleteDataFromTmp');
 
 const getAllUsers = async (req, res) => {
   const users = await User.find();
@@ -11,10 +14,11 @@ const getAllUsers = async (req, res) => {
 const getUsers = async (req, res) => {
   const user = req.user;
   const userShow = await user.getPublicProfile();
-  res.send(user);
+  res.send(user.getPublicProfile());
 };
 
 const editPersonalInformations = async (req, res) => {
+  //TODO: CHANGE EDIT PERSONAL INFORMATION FUNCTION LOGIC. ALWAYS WE WILL GET ALL DATA AS A FORM DATA/JSON
   const id = req.user._id;
   const body = req.body;
   const updates = Object.keys(body);
@@ -402,6 +406,71 @@ const removeInvoiceAddress = async (req, res) => {
   }
 };
 
+const editAvatar = async (req, res) => {
+  const user = req.user;
+  const avatar = req.file;
+
+  if (!avatar) {
+    res.status(400).send({ msg: 'There is no avatar to upload' });
+    throw new HttpError('There is no avatar to upload', 400);
+  }
+
+  if (user.avatar) {
+    console.log(user.avatar);
+    console.log(avatar.filename);
+    cloudObjectStorage.deleteItem(user.avatar);
+  }
+
+  try {
+    user.avatar = avatar.filename;
+    cloudObjectStorage.uploadFile(
+      avatar.filename,
+      avatar.path,
+      avatar.mimetype,
+    );
+    deleteDataFromTmp(avatar);
+
+    await user.save();
+    res.status(200).send({ msg: 'Avatar changed successfully!' });
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
+
+const editAdminLevel = async (req, res) => {
+  const { id, isAdmin } = req.body;
+
+  const user = await User.findOne({ _id: id });
+
+  if (!user) {
+    res.status(400).send({ msg: `There's no user with that id` });
+    throw new HttpError(`There's no user with that id`, 400);
+  }
+
+  if (!isAdmin) {
+    res.status(400).send({ msg: 'No role selected' });
+    throw new HttpError('No role selected', 400);
+  }
+
+  if (
+    isAdmin !== 'user' &&
+    isAdmin !== 'support' &&
+    isAdmin !== 'manager' &&
+    isAdmin !== 'admin'
+  ) {
+    res.status(400).send({ msg: 'Role selected is not supported' });
+    throw new HttpError('Role selected is not supported', 400);
+  }
+
+  try {
+    user.isAdmin = isAdmin;
+    await user.save();
+    res.status(200).send('Admin level changed ');
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUsers,
@@ -415,4 +484,6 @@ module.exports = {
   addInvoiceAddress,
   editInvoiceAddress,
   removeInvoiceAddress,
+  editAvatar,
+  editAdminLevel,
 };

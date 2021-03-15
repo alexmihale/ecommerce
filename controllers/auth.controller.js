@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const Cart = require('../models/cartModel');
 const bcrypt = require('bcrypt');
 const HttpError = require('../utils/HttpError');
 const jwt = require('jsonwebtoken');
@@ -85,6 +86,11 @@ const register = async (req, res) => {
     email,
     password: hashPassword,
   });
+  const cart = new Cart({
+    user: newUser._id,
+  });
+
+  newUser.cart = cart._id;
 
   const token = jwt.sign(
     { _id: newUser._id.toString() },
@@ -95,6 +101,7 @@ const register = async (req, res) => {
   );
 
   newUser.tokens = newUser.tokens.concat({ token });
+  await cart.save();
   await newUser.save();
   const userShow = await newUser.getPublicProfile();
   res.send({ user: userShow, token });

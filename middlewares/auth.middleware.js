@@ -14,13 +14,14 @@ const auth = async (req, res, next) => {
       'tokens.token': token,
     });
     if (!user) {
+      res.status(404).send({ msg: 'No user found!' });
       throw new HttpError('No user found!', 404);
     }
     req.token = token;
     req.user = user;
     next();
   } catch (e) {
-    res.status(401).send({ error: 'Please authenticate' });
+    res.status(401).send({ msg: 'Please authenticate' });
   }
 };
 

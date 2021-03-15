@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
 
-const voucherSchema = new mongoose.Schema(
+const voucherSchema = new mongoose.Schema( //TODO: VOUCHER FUNCTIONALITY
   {
     title: { type: String, required: true },
     body: { type: String, required: true },
-    category: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
+    category: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
+    ],
     //  Discount Type could be percentage or value
     discountType: { type: String, required: true },
     discount: { type: Number, required: true },
@@ -13,5 +15,5 @@ const voucherSchema = new mongoose.Schema(
     isPrivate: { type: Boolean, required: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
-  { timestamps: true }
+  { timestamps: true },
 );

@@ -25,11 +25,10 @@ const userSchema = new mongoose.Schema(
     mobilePhoneNumber: { type: String, default: null },
     homePhoneNumber: { type: String, default: null },
     isAdmin: {
-      // TODO: isAdmin middleware and functionality to create or verify if user is support, content managare and admin
       type: String,
       default: 'user',
     },
-    avatar: { type: String, default: null }, //TODO: avatar update functionality
+    avatar: { type: String, default: null },
     deliveryAddress: [
       {
         firstName: { type: String, default: null },
@@ -50,7 +49,7 @@ const userSchema = new mongoose.Schema(
         address: { type: String, default: null },
       },
     ],
-    cart: { type: mongoose.Schema.Types.ObjectId, ref: 'Cart' }, //TODO: create functionality to add items to cart and add it to user model
+    cart: { type: mongoose.Schema.Types.ObjectId, ref: 'Cart' },
     favourite: [
       //TODO: create favourite products functionality and add it to user model
       { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
@@ -64,6 +63,9 @@ const userSchema = new mongoose.Schema(
     warranty: [
       //TODO: create warranty functionality and add it to user model
       { type: mongoose.Schema.Types.ObjectId, ref: 'Warranty' },
+    ],
+    productsCreated: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     ],
     tokens: [
       {

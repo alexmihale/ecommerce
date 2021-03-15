@@ -1,46 +1,50 @@
 const express = require('express');
 const userController = require('../controllers/user.controller');
 const router = express.Router();
-const auth = require('../middlewares/auth.middleware');
+const isAdmin = require('../middlewares/isAdmin.middleware');
+const upload = require('../utils/multerObjectAction');
 
 router.get('/get-all-users', userController.getAllUsers);
-router.get('/', auth, userController.getUsers);
-router.patch(
-  '/edit-pi',
-  auth,
-  userController.editPersonalInformations,
-);
-router.post('/edit-email', auth, userController.editEmail);
-router.post('/edit-password', auth, userController.editPassword);
-router.post('/add-address', auth, userController.addAddress);
+router.get('/', userController.getUsers);
+router.patch('/edit-pi', userController.editPersonalInformations);
+router.post('/edit-email', userController.editEmail);
+router.post('/edit-password', userController.editPassword);
+router.post('/add-address', userController.addAddress);
 router.post(
   '/auditor-delivery-address',
-  auth,
   userController.addDeliveryAddress,
 );
 router.patch(
   '/auditor-delivery-address',
-  auth,
   userController.editDeliveryAddress,
 );
 router.delete(
   '/auditor-delivery-address',
-  auth,
   userController.removeDeliveryAddress,
 );
 router.post(
   '/auditor-invoice-address',
-  auth,
   userController.addInvoiceAddress,
 );
 router.patch(
   '/auditor-invoice-address',
-  auth,
   userController.editInvoiceAddress,
 );
 router.delete(
   '/auditor-invoice-address',
-  auth,
   userController.removeInvoiceAddress,
 );
+
+router.post(
+  '/edit-avatar',
+  upload.single('avatar'),
+  userController.editAvatar,
+);
+
+router.post(
+  '/edit-admin-level',
+  isAdmin,
+  userController.editAdminLevel,
+);
+
 module.exports = router;
