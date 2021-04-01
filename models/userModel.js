@@ -51,17 +51,14 @@ const userSchema = new mongoose.Schema(
     ],
     cart: { type: mongoose.Schema.Types.ObjectId, ref: 'Cart' },
     favourite: [
-      //TODO: create favourite products functionality and add it to user model
       { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     ],
-    review: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }], //TODO: create review products functionality and add it to user model
-    order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }], //TODO: create orders functionality and add it to user model
+    review: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
+    order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
     voucher: [
-      //TODO: create vouchers functionality and add it to user model
       { type: mongoose.Schema.Types.ObjectId, ref: 'Voucher' },
     ],
     warranty: [
-      //TODO: create warranty functionality and add it to user model
       { type: mongoose.Schema.Types.ObjectId, ref: 'Warranty' },
     ],
     productsCreated: [

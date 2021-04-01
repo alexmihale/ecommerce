@@ -1,8 +1,14 @@
 const mongoose = require('mongoose');
 
-const subscriptionSchema = new mongoose.Schema( //TODO: SUBSCRIPTION FUNCTIONALITY
+const subscriptionSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
   },
   { timestamps: true },
 );

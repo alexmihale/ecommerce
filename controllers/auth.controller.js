@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const HttpError = require('../utils/HttpError');
 const jwt = require('jsonwebtoken');
 const { default: validator } = require('validator');
+const Subscription = require('../models/subscriptionModel');
 require('dotenv/config');
 
 const login = async (req, res) => {
@@ -92,6 +93,10 @@ const register = async (req, res) => {
 
   newUser.cart = cart._id;
 
+  const subscribe = new Subscription({
+    email,
+  });
+
   const token = jwt.sign(
     { _id: newUser._id.toString() },
     process.env.JWT_SECRET,
@@ -101,6 +106,7 @@ const register = async (req, res) => {
   );
 
   newUser.tokens = newUser.tokens.concat({ token });
+  await subscribe.save();
   await cart.save();
   await newUser.save();
   const userShow = await newUser.getPublicProfile();

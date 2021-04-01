@@ -41,6 +41,13 @@ router.post(
   userController.editAvatar,
 );
 
+router.post('/add-favourite', userController.addProductToFavourite);
+
+router.delete(
+  '/delete-favourite',
+  userController.deleteProductFromFavourite,
+);
+
 router.post(
   '/edit-admin-level',
   isAdmin,

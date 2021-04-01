@@ -3,6 +3,7 @@ const Category = require('../models/categoryModel');
 const HttpError = require('../utils/HttpError');
 const deleteDataFromTmp = require('../utils/deleteDataFromTmp');
 const cloudObjectStorage = require('../utils/cloudObjectStorage');
+const mongoose = require('mongoose');
 
 const createProduct = async (req, res) => {
   let {
@@ -203,6 +204,12 @@ const createProduct = async (req, res) => {
     createdBy: user._id,
   });
 
+  const categoryIdIsValid = mongoose.Types.ObjectId.isValid(category);
+  if (!categoryIdIsValid) {
+    res.status(400).send({ msg: 'Invalid category ID' });
+    throw new HttpError('Invalid category ID', 400);
+  }
+
   const categoryFound = await Category.findOne({ _id: category.id });
 
   if (!categoryFound || categoryFound.length < 1) {
@@ -263,17 +270,36 @@ const createProduct = async (req, res) => {
 
   if (variant) {
     if (Array.isArray(variant)) {
-      variant.forEach(async (element) => {
+      for (const v of variant) {
+        const variantIdIsValid = mongoose.Types.ObjectId.isValid(v);
+
+        if (!variantIdIsValid) {
+          deleteDataFromTmp(image);
+          res.status(400).send({ msg: 'Invalid variant ID' });
+          throw new HttpError('Invalid variant ID', 400);
+        }
+
         const productVariant = await Product.findOne({
-          _id: element,
+          _id: v,
         });
+
         if (!productVariant) {
           deleteDataFromTmp(image);
-          res.status(400).send({ msg: 'Product variant not found' });
-          throw new HttpError('Product variant not found', 400);
+          res
+            .status(400)
+            .send({ msg: 'No product found with that ID' });
+          throw new HttpError('No product found with that ID', 400);
         }
-      });
+      }
     } else {
+      const variantIdIsValid = mongoose.Types.ObjectId.isValid(
+        variant,
+      );
+      if (!variantIdIsValid) {
+        deleteDataFromTmp(image);
+        res.status(400).send({ msg: 'Invalid variant ID' });
+        throw new HttpError('Invalid variant ID', 400);
+      }
       const productVariant = await Product.findOne({ _id: variant });
       if (!productVariant) {
         deleteDataFromTmp(image);
@@ -314,6 +340,12 @@ const editProduct = async (req, res) => {
   } = req.body;
   const image = req.files['image'];
   const id = req.params.id;
+
+  const idIsValid = mongoose.Types.ObjectId.isValid(id);
+  if (!idIsValid) {
+    res.status(400).send({ msg: 'Invalid product ID' });
+    throw new HttpError('Invalid Product ID', 400);
+  }
 
   const product = await Product.findOne({ _id: id });
 
@@ -536,17 +568,36 @@ const editProduct = async (req, res) => {
 
   if (variant) {
     if (Array.isArray(variant)) {
-      variant.forEach(async (element) => {
+      for (const v of variant) {
+        const variantIdIsValid = mongoose.Types.ObjectId.isValid(v);
+
+        if (!variantIdIsValid) {
+          deleteDataFromTmp(image);
+          res.status(400).send({ msg: 'Invalid variant ID' });
+          throw new HttpError('Invalid variant ID', 400);
+        }
+
         const productVariant = await Product.findOne({
-          _id: element,
+          _id: v,
         });
+
         if (!productVariant) {
           deleteDataFromTmp(image);
-          res.status(400).send({ msg: 'Product variant not found' });
-          throw new HttpError('Product variant not found', 400);
+          res
+            .status(400)
+            .send({ msg: 'No product found with that ID' });
+          throw new HttpError('No product found with that ID', 400);
         }
-      });
+      }
     } else {
+      const variantIdIsValid = mongoose.Types.ObjectId.isValid(
+        variant,
+      );
+      if (!variantIdIsValid) {
+        deleteDataFromTmp(image);
+        res.status(400).send({ msg: 'Invalid variant ID' });
+        throw new HttpError('Invalid variant ID', 400);
+      }
       const productVariant = await Product.findOne({ _id: variant });
       if (!productVariant) {
         deleteDataFromTmp(image);
@@ -554,6 +605,7 @@ const editProduct = async (req, res) => {
         throw new HttpError('Product variant not found', 400);
       }
     }
+
     product.variant = variant;
   }
 
@@ -577,7 +629,33 @@ const editProduct = async (req, res) => {
   }
 };
 
-const deleteProduct = async (req, res) => {};
+const deleteProduct = async (req, res) => {
+  const id = req.params.id;
+
+  const idIsValid = mongoose.Types.ObjectId.isValid(id);
+  if (!idIsValid) {
+    res.status(400).send({ msg: 'Invalid product ID' });
+    throw new HttpError('Invalid Product ID', 400);
+  }
+
+  const product = await Product.findByIdAndDelete(id);
+  if (!product) {
+    res.status(400).send({ msg: 'Product id not found!' });
+    throw new HttpError('Product id not found', 400);
+  }
+  try {
+    const deleteRequest = { Objects: [] };
+    product.image.map((element) => {
+      deleteRequest.Objects.push({ Key: element });
+    });
+
+    cloudObjectStorage.deleteMultipleItems(deleteRequest);
+
+    res.status(200).send({ msg: 'Product deleted successfully!' });
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
 
 module.exports = {
   createProduct,

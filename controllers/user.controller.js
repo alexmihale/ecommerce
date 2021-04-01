@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const fs = require('fs');
 const cloudObjectStorage = require('../utils/cloudObjectStorage');
 const deleteDataFromTmp = require('../utils/deleteDataFromTmp');
+const mongoose = require('mongoose');
 
 const getAllUsers = async (req, res) => {
   const users = await User.find();
@@ -18,7 +19,6 @@ const getUsers = async (req, res) => {
 };
 
 const editPersonalInformations = async (req, res) => {
-  //TODO: CHANGE EDIT PERSONAL INFORMATION FUNCTION LOGIC. ALWAYS WE WILL GET ALL DATA AS A FORM DATA/JSON
   const id = req.user._id;
   const body = req.body;
   const updates = Object.keys(body);
@@ -40,6 +40,14 @@ const editPersonalInformations = async (req, res) => {
     res.status(400).send('Invalid Updates!');
     throw new HttpError('Invalid updates!', 400);
   }
+
+  const idIsValid = mongoose.Types.ObjectId.isValid(id);
+
+  if (!idIsValid) {
+    res.status(400).send({ msg: 'Invalid user ID' });
+    throw new HttpError('Invalid user ID', 400);
+  }
+
   const user = await User.findByIdAndUpdate({ _id: id }, body, {
     new: true,
   });
@@ -416,8 +424,6 @@ const editAvatar = async (req, res) => {
   }
 
   if (user.avatar) {
-    console.log(user.avatar);
-    console.log(avatar.filename);
     cloudObjectStorage.deleteItem(user.avatar);
   }
 
@@ -439,6 +445,12 @@ const editAvatar = async (req, res) => {
 
 const editAdminLevel = async (req, res) => {
   const { id, isAdmin } = req.body;
+
+  const IdIsValid = mongoose.Types.ObjectId.isValid(id);
+  if (!IdIsValid) {
+    res.status(400).send({ msg: 'Invalid user ID' });
+    throw new HttpError('Invalid user ID', 400);
+  }
 
   const user = await User.findOne({ _id: id });
 
@@ -471,6 +483,74 @@ const editAdminLevel = async (req, res) => {
   }
 };
 
+const addProductToFavourite = async (req, res) => {
+  const { productId } = req.body;
+  const user = req.user;
+
+  const productIdIsValid = mongoose.Types.ObjectId.isValid(productId);
+
+  if (!productIdIsValid) {
+    res.status(400).send({ msg: 'Invalid product ID' });
+    throw new HttpError('Invalid Product ID', 400);
+  }
+
+  for (const product of user.favourite) {
+    if (product.equals(productId)) {
+      res.status(400).send({ msg: 'Product already in favourite' });
+      throw new HttpError('Product already in favourite', 400);
+    }
+  }
+
+  const favourites = user.favourite;
+  favourites.push(productId);
+  user.favourite = favourites;
+
+  try {
+    user.save();
+    res
+      .status(200)
+      .send({ msg: 'Favourite product added successfully' });
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
+
+const deleteProductFromFavourite = async (req, res) => {
+  const { productId } = req.body;
+  const user = req.user;
+  let productFound = false;
+
+  const productIdIsValid = mongoose.Types.ObjectId.isValid(productId);
+
+  if (!productIdIsValid) {
+    res.status(400).send({ msg: 'Invalid product ID' });
+    throw new HttpError('Invalid Product ID', 400);
+  }
+
+  for (const [index, product] of user.favourite.entries()) {
+    if (product.equals(productId)) {
+      const products = user.favourite;
+      products.splice(index, 1);
+      user.favourite = products;
+      productFound = true;
+    }
+  }
+
+  if (!productFound) {
+    res.status(400).send({ msg: 'Product is not in favourite cart' });
+    throw new HttpError('Product is not in favourite cart');
+  }
+
+  try {
+    user.save();
+    res
+      .status(200)
+      .send({ msg: 'Favourites product updated successfully' });
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUsers,
@@ -486,4 +566,6 @@ module.exports = {
   removeInvoiceAddress,
   editAvatar,
   editAdminLevel,
+  addProductToFavourite,
+  deleteProductFromFavourite,
 };
