@@ -108,7 +108,6 @@ const deleteReview = async (req, res) => {
       for (const review of reviews) {
         const productR = await Review.findById(review);
         reviewSum = reviewSum + productR.rating;
-        console.log(reviewSum);
       }
 
       const productRating = reviewSum / product.review.length;

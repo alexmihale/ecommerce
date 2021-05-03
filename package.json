@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "nyc --reporter=text mocha",
     "dev": "nodemon app.js",
     "start": "node app.js"
   },
@@ -18,8 +18,10 @@
     "express": "^4.17.1",
     "ibm-cos-sdk": "^1.9.0",
     "jsonwebtoken": "^8.5.1",
+    "mocha": "^8.3.2",
     "mongoose": "^5.11.8",
     "multer": "^1.4.2",
+    "nyc": "^15.1.0",
     "validator": "^13.5.2"
   }
 }

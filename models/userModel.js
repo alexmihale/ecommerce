@@ -55,9 +55,6 @@ const userSchema = new mongoose.Schema(
     ],
     review: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
     order: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
-    voucher: [
-      { type: mongoose.Schema.Types.ObjectId, ref: 'Voucher' },
-    ],
     warranty: [
       { type: mongoose.Schema.Types.ObjectId, ref: 'Warranty' },
     ],

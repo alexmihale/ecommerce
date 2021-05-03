@@ -9,14 +9,8 @@ const orderSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       lowercase: true,
-    },
-    mobilePhoneNumber: {
-      type: String,
-      default: null,
-      required: true,
     },
     deliveryAddress: {
       firstName: { type: String, default: null, required: true },
