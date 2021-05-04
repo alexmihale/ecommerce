@@ -25,18 +25,16 @@ const login = async (req, res) => {
   const user = await User.findOne({ email: email });
   if (!user) {
     res.status(400).send({
-      msg: 'Incorrect email email or password',
+      msg: 'Incorrect email or password',
     });
-    throw new HttpError('Incorrect email email or password', 400);
+    throw new HttpError('Incorrect email or password', 400);
   }
 
   const isMatch = bcrypt.compareSync(password, user.password);
 
   if (!isMatch) {
-    res
-      .status(400)
-      .send({ msg: 'Incorrect email email or password' });
-    throw new HttpError('Incorrect email email or password', 400);
+    res.status(400).send({ msg: 'Incorrect email or password' });
+    throw new HttpError('Incorrect email or password', 400);
   }
 
   const token = jwt.sign(
@@ -93,10 +91,6 @@ const register = async (req, res) => {
 
   newUser.cart = cart._id;
 
-  const subscribe = new Subscription({
-    email,
-  });
-
   const token = jwt.sign(
     { _id: newUser._id.toString() },
     process.env.JWT_SECRET,
@@ -106,7 +100,17 @@ const register = async (req, res) => {
   );
 
   newUser.tokens = newUser.tokens.concat({ token });
-  await subscribe.save();
+
+  const subscription = await Subscription.findOne({ email });
+
+  if (!subscription) {
+    const subscribe = new Subscription({
+      email,
+    });
+
+    await subscribe.save();
+  }
+
   await cart.save();
   await newUser.save();
   const userShow = await newUser.getPublicProfile();
@@ -140,7 +144,7 @@ const logoutAll = async (req, res) => {
 
 const checkEmailExist = async (req, res) => {
   const { email } = req.body;
-  const user = new User.findOne({ email: email });
+  const user = await User.findOne({ email: email });
 
   if (user) {
     res.send(true);

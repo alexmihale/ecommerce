@@ -6,16 +6,17 @@ const cartRouter = require('./cart.route');
 const reviewRouter = require('./review.router');
 const subscribeRouter = require('./subscribe.route');
 const orderRouter = require('./order.route');
+const voucherRouter = require('./voucher.route');
 const auth = require('../middlewares/auth.middleware');
-const isManager = require('../middlewares/isContentManager.middleware');
 const router = express.Router();
 
-router.use('/user', auth, userRouter);
+router.use('/user', userRouter);
 router.use('/auth', authRouter);
-router.use('/product', auth, isManager, productRouter);
+router.use('/product', productRouter);
 router.use('/cart', auth, cartRouter);
-router.use('/review', auth, reviewRouter);
+router.use('/review', reviewRouter);
 router.use('/subscribe', subscribeRouter);
 router.use('/order', orderRouter);
+router.use('/voucher', voucherRouter);
 
 module.exports = router;

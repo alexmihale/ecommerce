@@ -5,13 +5,38 @@ const mongoose = require('mongoose');
 const { default: validator } = require('validator');
 const HttpError = require('../utils/HttpError');
 const Product = require('../models/productModel');
+const Subscription = require('../models/subscriptionModel');
 
+const getOrder = async (req, res) => {
+  const orderId = req.headers['orderid'];
+
+  const IdIsValid = mongoose.Types.ObjectId.isValid(orderId);
+
+  if (!IdIsValid) {
+    res.status(400).send({ msg: 'Invalid order ID' });
+    throw new HttpError('Invalid order ID', 400);
+  }
+
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    res.status(400).send('No order found with that ID');
+    throw new HttpError('No order found with that ID', 400);
+  }
+
+  try {
+    res.send(order);
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
 const guestOrder = async (req, res) => {
   const {
     email,
     deliveryAddress,
     invoiceAddress,
     products,
+    quantity,
     voucher,
     price,
     priceWithVoucher,
@@ -19,6 +44,7 @@ const guestOrder = async (req, res) => {
   email.trim();
   email.toLowerCase();
   let finalPrice = 0;
+  let privateVoucher = false;
 
   if (!validator.isEmail(email)) {
     res.status(400).send({ msg: 'Incorrect email format' });
@@ -118,10 +144,15 @@ const guestOrder = async (req, res) => {
       throw new HttpError('Internal error on voucher price', 500);
     }
 
+    if (voucherFound.isPrivate) {
+      privateVoucher = true;
+    }
+
     finalPrice = priceWithVoucher;
   }
   const order = new Order({
     product: products,
+    quantity,
     email,
     deliveryAddress: {
       firstName: deliveryAddress.firstName,
@@ -143,10 +174,10 @@ const guestOrder = async (req, res) => {
     price: finalPrice,
   });
   let prod = [];
-  for (const product of products) {
-    const p = await Product.findById(product);
+  for (const [index, product] of products.entries()) {
+    const productFound = await Product.findById(product);
 
-    if (!p) {
+    if (!productFound) {
       res
         .status(400)
         .send({ msg: 'One of the products could not be found' });
@@ -156,19 +187,42 @@ const guestOrder = async (req, res) => {
       );
     }
 
-    if (p.stock < 1) {
+    if (productFound.stock < 1) {
       res
         .status(400)
         .send({ msg: 'One of products is out of stock' });
       throw new HttpError('One of products is out of stock', 400);
     }
 
-    let stock = p.stock;
-    stock = stock - 1;
-    p.stock = stock;
-    prod.push(p);
+    let stock = productFound.stock;
+    stock = stock - quantity[index];
+    if (stock < 0) {
+      res.status(400).send({
+        msg: 'One of products have a lower stock than selected',
+      });
+      throw new HttpError(
+        'One of products have a lower stock than selected',
+        400,
+      );
+    }
+    productFound.stock = stock;
+    prod.push(productFound);
   }
+
+  const subscription = await Subscription.findOne({ email });
+
+  if (!subscription) {
+    const subscribe = new Subscription({
+      email,
+    });
+
+    await subscribe.save();
+  }
+
   try {
+    if (privateVoucher) {
+      await Voucher.findByIdAndDelete(voucher);
+    }
     for (const product of prod) {
       await product.save();
     }
@@ -182,6 +236,7 @@ const guestOrder = async (req, res) => {
 const userOrder = async (req, res) => {
   const {
     products,
+    quantity,
     voucher,
     price,
     priceWithVoucher,
@@ -191,6 +246,7 @@ const userOrder = async (req, res) => {
   // NOTE: PRICE COME FROM FE WITH VOUCHER DISCOUT ALREADY APPLIED;
   const user = req.user;
   let finalPrice = 0;
+  let privateVoucher = false;
 
   if (!products) {
     res.status(400).send({ msg: 'No product selected' });
@@ -222,6 +278,10 @@ const userOrder = async (req, res) => {
       throw new HttpError('Internal error on voucher price', 500);
     }
 
+    if (voucherFound.isPrivate) {
+      privateVoucher = true;
+    }
+
     finalPrice = priceWithVoucher;
   }
 
@@ -251,10 +311,10 @@ const userOrder = async (req, res) => {
     price: finalPrice,
   });
   let prod = [];
-  for (const product of products) {
-    const p = await Product.findById(product);
+  for (const [index, product] of products.entries()) {
+    const productFound = await Product.findById(product);
 
-    if (!p) {
+    if (!productFound) {
       res
         .status(400)
         .send({ msg: 'One of the products could not be found' });
@@ -264,21 +324,33 @@ const userOrder = async (req, res) => {
       );
     }
 
-    if (p.stock < 1) {
+    if (productFound.stock < 1) {
       res
         .status(400)
         .send({ msg: 'One of products is out of stock' });
       throw new HttpError('One of products is out of stock', 400);
     }
 
-    let stock = p.stock;
-    stock = stock - 1;
-    p.stock = stock;
-    prod.push(p);
+    let stock = productFound.stock;
+    stock = stock - quantity[index];
+    if (stock < 0) {
+      res.status(400).send({
+        msg: 'One of products have a lower stock than selected',
+      });
+      throw new HttpError(
+        'One of products have a lower stock than selected',
+        400,
+      );
+    }
+    productFound.stock = stock;
+    prod.push(productFound);
   }
 
   user.order.push(order._id);
   try {
+    if (privateVoucher) {
+      await Voucher.findByIdAndDelete(voucher);
+    }
     for (const product of prod) {
       await product.save();
     }
@@ -291,6 +363,7 @@ const userOrder = async (req, res) => {
 };
 
 module.exports = {
+  getOrder,
   guestOrder,
   userOrder,
 };

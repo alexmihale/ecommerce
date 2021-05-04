@@ -4,6 +4,29 @@ const User = require('../models/userModel');
 const mongoose = require('mongoose');
 const Cart = require('../models/cartModel');
 
+const getCart = async (req, res) => {
+  const cartId = req.user.cart;
+
+  const IdIsValid = mongoose.Types.ObjectId.isValid(cartId);
+  if (!IdIsValid) {
+    res.status(400).send({ msg: 'Invalid cart ID' });
+    throw new HttpError('Invalid cart ID', 400);
+  }
+
+  const cart = await Cart.findById(cartId);
+
+  if (!cart) {
+    res.status(400).send({ msg: 'No cart found with that ID' });
+    throw new HttpError('No cart found with that ID', 400);
+  }
+
+  try {
+    res.send(cart);
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
+
 const addToCart = async (req, res) => {
   const { productId, quantity = 1 } = req.body;
   const cartId = req.user.cart;
@@ -123,6 +146,7 @@ const editCart = async (req, res) => {
 };
 
 module.exports = {
+  getCart,
   addToCart,
   removeFromCart,
   editCart,

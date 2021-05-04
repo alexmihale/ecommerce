@@ -4,6 +4,29 @@ const Review = require('../models/reviewModel');
 const HttpError = require('../utils/HttpError');
 const mongoose = require('mongoose');
 
+const getReview = async (req, res) => {
+  const reviewId = req.headers['reviewid'];
+
+  const IdIsValid = mongoose.Types.ObjectId.isValid(reviewId);
+
+  if (!IdIsValid) {
+    res.status(400).send({ msg: 'Invalid review ID' });
+    throw new HttpError('Invalid review ID', 400);
+  }
+
+  const review = await Review.findById(reviewId);
+
+  if (!review) {
+    res.status(400).send({ msg: 'No review found with that ID' });
+    throw new HttpError('No review found with that ID', 400);
+  }
+
+  try {
+    res.send(review);
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
 const addReview = async (req, res) => {
   const { title, body, rating, productId } = req.body;
   const user = req.user;
@@ -148,6 +171,7 @@ const deleteReview = async (req, res) => {
 };
 
 module.exports = {
+  getReview,
   addReview,
   deleteReview,
 };

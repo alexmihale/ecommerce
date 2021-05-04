@@ -5,6 +5,24 @@ const deleteDataFromTmp = require('../utils/deleteDataFromTmp');
 const cloudObjectStorage = require('../utils/cloudObjectStorage');
 const mongoose = require('mongoose');
 
+const getProduct = async (req, res) => {
+  const productId = req.headers['productid'];
+
+  const idIsValid = mongoose.Types.ObjectId.isValid(productId);
+  if (!idIsValid) {
+    res.status(400).send({ msg: 'Invalid product ID' });
+    throw new HttpError('Invalid Product ID', 400);
+  }
+
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    res.status(400).send({ msg: 'No product found' });
+    throw new HttpError('No product found', 400);
+  }
+  res.json(product);
+};
+
 const createProduct = async (req, res) => {
   let {
     title,
@@ -203,12 +221,6 @@ const createProduct = async (req, res) => {
     specs,
     createdBy: user._id,
   });
-
-  const categoryIdIsValid = mongoose.Types.ObjectId.isValid(category);
-  if (!categoryIdIsValid) {
-    res.status(400).send({ msg: 'Invalid category ID' });
-    throw new HttpError('Invalid category ID', 400);
-  }
 
   const categoryFound = await Category.findOne({ _id: category.id });
 
@@ -658,6 +670,7 @@ const deleteProduct = async (req, res) => {
 };
 
 module.exports = {
+  getProduct,
   createProduct,
   editProduct,
   deleteProduct,

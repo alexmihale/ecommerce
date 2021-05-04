@@ -3,6 +3,7 @@ const router = express.Router();
 const orderController = require('../controllers/order.controller');
 const auth = require('../middlewares/auth.middleware');
 
+router.get('/', orderController.getOrder);
 router.post('/guest-order', orderController.guestOrder);
 router.post('/user-order', auth, orderController.userOrder);
 

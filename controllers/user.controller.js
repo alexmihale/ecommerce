@@ -7,15 +7,33 @@ const cloudObjectStorage = require('../utils/cloudObjectStorage');
 const deleteDataFromTmp = require('../utils/deleteDataFromTmp');
 const mongoose = require('mongoose');
 
-const getAllUsers = async (req, res) => {
-  const users = await User.find();
-  res.send(users);
-};
+const getUserById = async (req, res) => {
+  const userId = req.headers['userid'];
 
-const getUsers = async (req, res) => {
+  const idIsValid = mongoose.Types.ObjectId.isValid(userId);
+  if (!idIsValid) {
+    res.status(400).send({ msg: 'Invalid user ID' });
+    throw new HttpError('Invalid user ID', 400);
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    res.status(400).send({ msg: 'No user found' });
+    throw new HttpError('No user found', 400);
+  }
+
+  try {
+    const userShow = await user.getPublicProfile();
+    res.send(userShow);
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
+const getUser = async (req, res) => {
   const user = req.user;
   const userShow = await user.getPublicProfile();
-  res.send(user.getPublicProfile());
+  res.send(userShow);
 };
 
 const editPersonalInformations = async (req, res) => {
@@ -552,8 +570,8 @@ const deleteProductFromFavourite = async (req, res) => {
 };
 
 module.exports = {
-  getAllUsers,
-  getUsers,
+  getUserById,
+  getUser,
   editPersonalInformations,
   editEmail,
   editPassword,

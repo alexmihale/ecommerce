@@ -7,7 +7,7 @@ const voucherSchema = new mongoose.Schema(
 
     discountType: { type: String, required: true },
     discount: { type: Number, required: true },
-    isPrivate: { type: Boolean, required: true },
+    isPrivate: { type: Boolean, default: false },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },
