@@ -41,6 +41,7 @@ const guestOrder = async (req, res) => {
     price,
     priceWithVoucher,
   } = req.body;
+
   email.trim();
   email.toLowerCase();
   let finalPrice = 0;
